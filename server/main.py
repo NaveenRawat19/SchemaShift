@@ -1,8 +1,13 @@
-from fastapi import FastAPI, File, UploadFile
-from services.dbMigration.migrationService import MigrationService
+from fastapi import FastAPI, Depends
+import sys, os
+from services.exersizeService.exersize import ExersizeService
 import json, subprocess
-import tempfile
+from server.models.models import User, UserAuth
+from auth.kerberos_auth import KerberosAuth
+
 app = FastAPI()
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 @app.get("/")
 async def root():
@@ -13,19 +18,25 @@ async def root():
         return {"keys": keys}
     else:
         return {"keys": []}
-    
-@app.post("/nosql-to-sql")
-async def convert_nosql_to_sql(file: UploadFile = File(...)):
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = temp_file.name
 
-        migrate = MigrationService(db_connection=None, source_collection=temp_file_path, target_table="target_table")
-        keys = migrate.migrate()
-        return keys
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON format"}, 400
+@app.post("/authenticate")
+async def authenticate(user_auth: UserAuth):
+    auth = KerberosAuth()
+    return auth.authenticate(user_auth.username, user_auth.password)
+
+@app.get("/get-exercises")
+async def get_exercises():
+    exercise = ExersizeService()
+    return exercise.process()
+
+@app.get("/get-users")
+async def get_users():
+    exercise = ExersizeService()
+    return exercise.db.get_users()
+
+@app.post("/users/add")
+async def add_user(payload: User):
+    exercise = ExersizeService()
+    return exercise.db.add_user(payload)
                 
     

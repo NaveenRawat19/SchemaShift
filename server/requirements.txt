@@ -1,2 +1,7 @@
 fastapi
 uvicorn
+eralchemy
+python-multipart
+sqlalchemy
+pymongo[srv]
+dotenv
